@@ -6,7 +6,11 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    new TServer(this);
+    TServer *server = new TServer(this);
+    server->initialize();
+    if(server->listen(QHostAddress::LocalHost,25))
+        qDebug()<<"SERVER RUN";
+    else qDebug()<<server->errorString();
 }
 
 MainWindow::~MainWindow()
