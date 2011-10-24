@@ -4,15 +4,20 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core gui\
+            network
 
 TARGET = AIPOS_LAB3_SERVER
 TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp
+        mainwindow.cpp \
+    tserver.cpp
 
-HEADERS  += mainwindow.h
+HEADERS  += mainwindow.h \
+    tserver.h
 
 FORMS    += mainwindow.ui
+
+
