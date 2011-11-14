@@ -4,6 +4,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QByteArray>
+#include <QTextEdit>
 
 class TServer : public QTcpServer
 {
@@ -27,7 +28,7 @@ private:
     void sendToClient(QByteArray aData);
     void sendFirstMessage();
     void sendHelloMessage();
-
+    QTextEdit *te;
 
     bool echoMode;
 

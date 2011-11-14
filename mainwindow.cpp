@@ -11,6 +11,7 @@ MainWindow::MainWindow(QWidget *parent) :
     if(server->listen(QHostAddress::LocalHost,25))
         qDebug()<<"SERVER RUN";
     else qDebug()<<server->errorString();
+
 }
 
 MainWindow::~MainWindow()

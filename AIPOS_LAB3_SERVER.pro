@@ -13,11 +13,11 @@ TEMPLATE = app
 
 SOURCES += main.cpp\
         mainwindow.cpp \
-    tserver.cpp
+    tserver.cpp \
+    myprocess.cpp
 
 HEADERS  += mainwindow.h \
-    tserver.h
+    tserver.h \
+    myprocess.h
 
 FORMS    += mainwindow.ui
-
-
