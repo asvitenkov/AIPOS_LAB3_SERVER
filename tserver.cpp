@@ -3,6 +3,10 @@
 #include <QChar>
 #include <QTextCodec>
 
+
+
+
+
 TServer::TServer(QObject *parent) :
     QTcpServer(parent)
 {
@@ -19,7 +23,7 @@ void TServer::initialize(){
     enteringPassword = false;
     for(int i=0;i<40;i++) optionsState[i]=CONST_OFF;
     optionsState[1]=CONST_ON;
-    optionsState[31]=CONST_ON;
+    //optionsState[31]=CONST_ON;
     optionsState[3]=CONST_ON;
     password.clear();
     login.clear();
@@ -40,7 +44,7 @@ void TServer::incomingConnection(int handle){
     clientSocket->setSocketDescriptor(handle);
     connect(clientSocket,SIGNAL(readyRead()),this,SLOT(readClient()));
     connect((clientSocket),SIGNAL(disconnected()),this,SLOT(clientDisc()));
-
+    emit printToDisplay(QString(QString("incoming connection from ")+clientSocket->peerAddress().toString()).toLocal8Bit());
 
 
 
@@ -81,7 +85,10 @@ void TServer::readClient(){
 
 void TServer::parseMessage(QByteArray aMessage){
     qDebug()<<"TServer::parseMessage";
-    qDebug()<<"int"<<(int)aMessage[0]<<" "<<QString::fromLocal8Bit(aMessage);
+    QByteArray ars; ars+=255;
+    if(aMessage.indexOf((char)255)!=-1 && aMessage.size()==2) return;
+    //for(int i=0;i<aMessage.size();i++)
+    qDebug()<<"int "<<(int)aMessage[0]<<" "<<QString::fromLocal8Bit(aMessage)<<" "<<aMessage.size();
     //int pos=-1;
     QByteArray outputData;
     int pos=aMessage.indexOf((char)IAC);
@@ -105,7 +112,8 @@ void TServer::parseMessage(QByteArray aMessage){
             QByteArray options;
             options+=aMessage[0];
             options+=aMessage[1];
-            parseOptions(options);
+            if(options[0]>=251)
+                parseOptions(options);
             aMessage.remove(0,2);
 
         }
@@ -127,23 +135,29 @@ void TServer::parseMessage(QByteArray aMessage){
 
 void TServer::sendToClient(QByteArray aData){
     qDebug()<<"TServer::sendToClient";
-    if(clientSocket!=NULL)clientSocket->write(aData);
+    qDebug()<<aData.size();
+    if(clientSocket!=NULL){
+        int pos = aData.indexOf((char)IAC);
+        while(pos!=-1){
+            qDebug()<<"######## "<<(int)aData.at(pos+1);
+            if ((aData.at(pos+1)!=(char)250) && (aData.at(pos+1)!=(char)251) &&(aData.at(pos+1)!=(char)252) &&(aData.at(pos+1)!=(char)253)&&(aData.at(pos+1)!=(char)254)){
+                aData = aData.insert(pos,IAC);
+                pos = aData.indexOf(IAC,pos+2);
+            }
+            else pos = aData.indexOf(IAC,pos+1);
+        }
+        clientSocket->write(aData);
+    }
 }
 
 
 void TServer::sendFirstMessage(){
     qDebug()<<"TServer::sendFirstMessage()";
     QByteArray msg;
-    msg+=IAC; msg+=DO; msg+=31;
-    msg+=IAC; msg+=DO; msg+=24;
+    //msg+=IAC; msg+=DO; msg+=31;
+    //msg+=IAC; msg+=DO; msg+=24;
     msg+=IAC; msg+=WILL; msg+=1;
     msg+=IAC; msg+=WILL; msg+=3;
-    msg+=IAC; msg+=251; msg+=1;
-    msg+=IAC; msg+=251; msg+=3;
-    msg+=IAC; msg+=253; msg+=39;
-    msg+=IAC; msg+=253; msg+=31;
-    msg+=IAC; msg+=253; msg+='\0';
-    msg+=IAC; msg+=251; msg+='\0';
     sendToClient(msg);
     qDebug()<<msg;
 }
@@ -162,10 +176,18 @@ void TServer::sendHelloMessage(){
 void TServer::parseOptions(QByteArray aOptions){
     qDebug()<<"TSession::parseOptions";
     // вообще то может на какие то опции нужно отвечать и подругому - хз
+    if(aOptions.size()!=2) return;
     QByteArray answer;
     int option=(int)aOptions[1];
     int param = (int)aOptions[0]+256;
     answer+=255;
+    if((param==253 && option == 1)||(param==251 && option==3)) return;
+    if((option==31 || option==24) && param == 254){
+        answer+=WONT;
+        answer+=option;
+        sendToClient(answer);
+        return;
+    }
     switch(param){
     case 251: // WILL
         // клиент хочет включить эту опцию
@@ -216,15 +238,39 @@ void TServer::parseOptions(QByteArray aOptions){
         break;
     }
     answer+=option;
-    sendToClient(answer);
+    if(answer.size()==3)sendToClient(answer);
 }
 
 
 
 void TServer::parseClientData(QByteArray aData){
     qDebug()<<"TServer::parseClientData(QByteArray aData)";
+//    emit printToDisplay(aData);
     if(aData.isEmpty()) return;
     while(!aData.isEmpty()){
+        if(aData[0]==(char)8){
+
+            if(echoMode){
+                if(enteringPassword){
+                    if(!password.isEmpty())
+                        sendToClient(QString(aData.at(0)).toLocal8Bit());
+                    password.remove(password.size()-1,1);
+                }
+                else if(enteringLogin){
+                    if(!login.isEmpty())
+                        sendToClient(QString(aData.at(0)).toLocal8Bit());
+                    login.remove(login.size()-1,1);
+                }
+                else if(enteringCMD){
+                    if(!cmd.isEmpty())
+                        sendToClient(QString(aData.at(0)).toLocal8Bit());
+                    cmd.remove(cmd.size()-1,1);
+                }
+            }
+
+            aData.remove(0,1);
+            continue;
+        }
         if(echoMode){
             if(enteringPassword){
                 if(aData[0]!=13){
@@ -233,6 +279,7 @@ void TServer::parseClientData(QByteArray aData){
                 }
                 else{
                     // это перевод строки ввод пароля закончился
+                    emit printToDisplay(password);
                     sendToClient(QString("\r\n").toLocal8Bit());
                     if(checkAccess()){
                         // user entering
@@ -243,7 +290,7 @@ void TServer::parseClientData(QByteArray aData){
 
                         prc = new myProcess;
                         prc->startProcess();
-                        connect(prc,SIGNAL(output(QString)),this,SLOT(commandProcessed(QString)));
+                        connect(prc,SIGNAL(output(QByteArray)),this,SLOT(commandProcessed(QByteArray)));
                     }
                     else{
                         // don't entering
@@ -263,6 +310,7 @@ void TServer::parseClientData(QByteArray aData){
                 }
                 else{
                     // ввод логина закончился
+                    emit printToDisplay(login);
                     sendToClient(QString("\r\nPassword: ").toLocal8Bit());
                     enteringLogin = false;
                     enteringPassword = true;
@@ -276,7 +324,9 @@ void TServer::parseClientData(QByteArray aData){
                 }
                 else{
                     sendToClient(QString("\r\n").toLocal8Bit());
-                    prc->runCommand(QString(cmd));
+                    emit printToDisplay(cmd);
+                    prc->runCommand(cmd);
+                    qDebug()<<prc->myProc.readLine();
                     if(QString(cmd)=="exit"){
                         disconnect(clientSocket,SIGNAL(readyRead()),this,SLOT(readClient()));
                         clientSocket->disconnectFromHost();
@@ -289,16 +339,16 @@ void TServer::parseClientData(QByteArray aData){
                     cmd.clear();
                 }
             }
-            //sendToClient(QString(aData.at(0)).toLocal8Bit());
 
         }
-        aData.remove(0,1);
+        aData=aData.remove(0,1);
+        if(aData[0]==10) aData=aData.remove(0,1);
     }
 
 }
 
 
-bool TServer::checkAccess(){
+bool TServer::  checkAccess(){
     qDebug()<<"checkAccess";
     qDebug()<<login<<" "<<password;
     if(QString(login)=="admin" && QString(password)=="pass")
@@ -307,11 +357,13 @@ bool TServer::checkAccess(){
 }
 
 
-void TServer::commandProcessed(QString res){
+void TServer::commandProcessed(QByteArray msg){
     qDebug()<<"commandProcessed";
     //res=res.remove(res);
-    sendToClient(res.toLocal8Bit());
-    qDebug()<<res;
+    sendToClient(msg);
+    //emit printToDisplay(msg);
+    //sendToClient(res.toLocal8Bit());
+    qDebug()<<msg;
 }
 
 
@@ -327,4 +379,9 @@ void TServer::clientDisc(){
     login.clear();
     password.clear();
     cmd.clear();
+    emit printToDisplay(QString("close connection").toLocal8Bit());
 }
+
+
+
+

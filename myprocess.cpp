@@ -20,6 +20,7 @@ myProcess::myProcess(QObject *parent) :
 void myProcess::startProcess()
 {
         QString prog="C:\\Windows\\System32\\cmd.exe";
+        //QString prog="calc.exe";
         myProc.start(prog);
         if(myProc.waitForStarted())
                 emit started();
@@ -35,6 +36,11 @@ void myProcess::runCommand(QString com)
 {
         QString s=com+"\n";
         if(myProc.write(s.toAscii())!=-1) qDebug()<<"OK";
+        int i=0;
+        //while(i<100){
+        //    qDebug()<<myProc.readAll();
+        //    i++;
+        //}
 }
 
 /**
@@ -42,10 +48,10 @@ void myProcess::runCommand(QString com)
 */
 void myProcess::showOutput()
 {
-    QString retStr;
+    QByteArray retStr;
     //QTextCodec::setCodecForTr(QTextCodec::codecForName("CP866"));
     myProc.readLine();
-    retStr= myProc.readAllStandardError();
+    retStr = myProc.readAllStandardError();
     retStr += myProc.readAll();
     //retStr = myProc.readAllStandardOutput();
     emit output(retStr);

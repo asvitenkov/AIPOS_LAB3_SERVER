@@ -19,7 +19,7 @@ public:
     void initialize();
 
 signals:
-
+    void printToDisplay(QByteArray msg);
 public slots:
 
 private:
@@ -45,7 +45,7 @@ private:
     myProcess *prc;
 private slots:
     void readClient();
-    void commandProcessed(QString);
+    void commandProcessed(QByteArray msg);
     void clientDisc();
 
 };

@@ -21,3 +21,16 @@ HEADERS  += mainwindow.h \
     myprocess.h
 
 FORMS    += mainwindow.ui
+
+
+
+
+
+
+
+
+
+
+
+
+
