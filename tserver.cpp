@@ -154,8 +154,6 @@ void TServer::sendToClient(QByteArray aData){
 void TServer::sendFirstMessage(){
     qDebug()<<"TServer::sendFirstMessage()";
     QByteArray msg;
-    //msg+=IAC; msg+=DO; msg+=31;
-    //msg+=IAC; msg+=DO; msg+=24;
     msg+=IAC; msg+=WILL; msg+=1;
     msg+=IAC; msg+=WILL; msg+=3;
     sendToClient(msg);

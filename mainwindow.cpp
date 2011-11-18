@@ -25,6 +25,7 @@ MainWindow::~MainWindow()
 
 
 void MainWindow::display(QByteArray msg){
+    if(msg.isEmpty()) return;
     ui->textEdit->append(QTime::currentTime().toString("hh:mm:ss")+" "+QString::fromLocal8Bit(msg));
     //ui->textEdit->textCursor().insertText(QString(msg));
 }

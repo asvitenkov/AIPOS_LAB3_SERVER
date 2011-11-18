@@ -8,18 +8,36 @@ namespace Ui {
     class MainWindow;
 }
 
+/**
+ * @brief
+ *
+ */
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
+    /**
+     * @brief
+     *
+     * @param parent
+     */
     explicit MainWindow(QWidget *parent = 0);
+    /**
+     * @brief
+     *
+     */
     ~MainWindow();
 
 private:
-    Ui::MainWindow *ui;
+    Ui::MainWindow *ui; /**< TODO */
 
 private slots:
+    /**
+     * @brief
+     *
+     * @param msg
+     */
     void display(QByteArray msg);
 };
 

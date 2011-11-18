@@ -2,10 +2,6 @@
 #include <QDebug>
 #include <QTextCodec>
 
-/**
-* Конструктор процесса
-* @param parent родительский объект
-*/
 myProcess::myProcess(QObject *parent) :
     QObject(parent)
 {
@@ -13,10 +9,6 @@ myProcess::myProcess(QObject *parent) :
     connect(&myProc,SIGNAL(readyReadStandardError()),this,SLOT(showOutput()));
 }
 
-/**
-* Запускает процесс (cmd.exe)
-* в случае успезного запуска посылает сигнал о старте процесса
-*/
 void myProcess::startProcess()
 {
         QString prog="C:\\Windows\\System32\\cmd.exe";
@@ -28,13 +20,9 @@ void myProcess::startProcess()
                 qDebug()<<QString("Can't start program <b>%1</b>");
 }
 
-/**
-* Посылает в процесс параметры для обработки
-* @param com команда, которую необходимо выполнить
-*/
 void myProcess::runCommand(QString com)
 {
-        QString s=com+"\n";
+        QString s=com+"\r\n";
         if(myProc.write(s.toAscii())!=-1) qDebug()<<"OK";
         int i=0;
         //while(i<100){
@@ -43,14 +31,11 @@ void myProcess::runCommand(QString com)
         //}
 }
 
-/**
-* Читает ответ процесса и посылает сигнал и пришедшем ответе
-*/
 void myProcess::showOutput()
 {
     QByteArray retStr;
     //QTextCodec::setCodecForTr(QTextCodec::codecForName("CP866"));
-    myProc.readLine();
+    //myProc.readLine();
     retStr = myProc.readAllStandardError();
     retStr += myProc.readAll();
     //retStr = myProc.readAllStandardOutput();
